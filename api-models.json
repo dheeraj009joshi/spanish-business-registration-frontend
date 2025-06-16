@@ -1,0 +1,564 @@
+{
+  "authApi": {
+    "login": {
+      "endpoint": "POST /api/auth/login",
+      "input": {
+        "email": "string (required) - User's email address",
+        "password": "string (required) - User's password"
+      },
+      "output": {
+        "success": "boolean - Whether the login was successful",
+        "data": {
+          "user": {
+            "id": "string - Unique user identifier",
+            "email": "string - User's email address",
+            "firstName": "string - User's first name",
+            "lastName": "string - User's last name",
+            "createdAt": "string (ISO date) - Account creation timestamp"
+          },
+          "token": "string - JWT authentication token"
+        },
+        "error": "string (optional) - Error message if login failed"
+      },
+      "example_input": {
+        "email": "dlovej009@gmail.com",
+        "password": "Dheeraj@2006"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "user": {
+            "id": "1",
+            "email": "dlovej009@gmail.com",
+            "firstName": "Dheeraj",
+            "lastName": "Joshi",
+            "createdAt": "2024-01-15T10:30:00.000Z"
+          },
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+      },
+      "example_output_error": {
+        "success": false,
+        "error": "Invalid email or password"
+      }
+    },
+    "signup": {
+      "endpoint": "POST /api/auth/signup",
+      "input": {
+        "firstName": "string (required) - User's first name",
+        "lastName": "string (required) - User's last name",
+        "email": "string (required) - User's email address",
+        "password": "string (required) - User's password (min 8 chars)"
+      },
+      "output": {
+        "success": "boolean - Whether the signup was successful",
+        "data": {
+          "user": {
+            "id": "string - Unique user identifier",
+            "email": "string - User's email address",
+            "firstName": "string - User's first name",
+            "lastName": "string - User's last name",
+            "createdAt": "string (ISO date) - Account creation timestamp"
+          },
+          "token": "string - JWT authentication token"
+        },
+        "error": "string (optional) - Error message if signup failed"
+      },
+      "example_input": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john.doe@example.com",
+        "password": "SecurePass123"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "user": {
+            "id": "2",
+            "email": "john.doe@example.com",
+            "firstName": "John",
+            "lastName": "Doe",
+            "createdAt": "2024-01-15T11:00:00.000Z"
+          },
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+      },
+      "example_output_error": {
+        "success": false,
+        "error": "Email already exists"
+      }
+    },
+    "logout": {
+      "endpoint": "POST /api/auth/logout",
+      "input": {
+        "token": "string (required) - JWT token to invalidate"
+      },
+      "output": {
+        "success": "boolean - Whether the logout was successful",
+        "message": "string - Confirmation message"
+      },
+      "example_input": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      },
+      "example_output": {
+        "success": true,
+        "message": "Successfully logged out"
+      }
+    },
+    "getCurrentUser": {
+      "endpoint": "GET /api/auth/me",
+      "input": {
+        "headers": {
+          "Authorization": "Bearer {token}"
+        }
+      },
+      "output": {
+        "success": "boolean - Whether the request was successful",
+        "data": {
+          "user": {
+            "id": "string - Unique user identifier",
+            "email": "string - User's email address",
+            "firstName": "string - User's first name",
+            "lastName": "string - User's last name",
+            "createdAt": "string (ISO date) - Account creation timestamp"
+          }
+        },
+        "error": "string (optional) - Error message if unauthorized"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "user": {
+            "id": "1",
+            "email": "dlovej009@gmail.com",
+            "firstName": "Dheeraj",
+            "lastName": "Joshi",
+            "createdAt": "2024-01-15T10:30:00.000Z"
+          }
+        }
+      },
+      "example_output_error": {
+        "success": false,
+        "error": "Invalid or expired token"
+      }
+    }
+  },
+  "formApi": {
+    "submitForm": {
+      "endpoint": "POST /api/forms/submit",
+      "input": {
+        "type": "string (required) - Either 'DIY' or 'ASSISTED'",
+        "data": "object (required) - Form data based on service type"
+      },
+      "diy_form_data": {
+        "businesstype": "string (required) - Selected business type",
+        "businessName1": "string (required) - Primary business name choice",
+        "businessName2": "string (optional) - Secondary business name choice",
+        "businessName3": "string (optional) - Third business name choice",
+        "professionType": "string (optional) - For professional corporations",
+        "publicBenefitStatement": "string (optional) - For benefit corporations",
+        "naicsCode": "string (required) - NAICS industry code",
+        "naicsSubCode": "string (required) - NAICS sub-industry code",
+        "principalAddress1": "string (required) - Business address line 1",
+        "principalAddress2": "string (optional) - Business address line 2",
+        "principalCity": "string (required) - Business city",
+        "principalState": "string (required) - Business state (default: GA)",
+        "principalZip": "string (required) - Business ZIP code",
+        "primaryEmail": "string (required) - Primary business email",
+        "confirmPrimaryEmail": "string (required) - Email confirmation",
+        "secondaryEmail": "string (optional) - Secondary business email",
+        "county": "string (required) - County for registration",
+        "organizerInfo": "string (required) - Organizer information",
+        "optionalProvisions": "string (optional) - Additional provisions",
+        "agreeToTerms": "boolean (required) - Terms agreement",
+        "agreeToPayment": "boolean (required) - Payment agreement"
+      },
+      "assisted_form_data": {
+        "businesstype": "string (required) - Selected business type",
+        "businessName": "string (required) - Desired business name",
+        "businessDescription": "string (required) - Business description",
+        "phone": "string (required) - Contact phone number",
+        "preferredContactMethod": "string (optional) - Preferred contact method",
+        "additionalServices": "array (optional) - Array of selected service IDs",
+        "agreeToTerms": "boolean (required) - Terms agreement",
+        "agreeToPayment": "boolean (required) - Payment agreement"
+      },
+      "output": {
+        "success": "boolean - Whether the submission was successful",
+        "data": {
+          "submissionId": "string - Unique submission identifier",
+          "estimatedProcessingTime": "string - Expected processing timeframe",
+          "nextSteps": "array - Array of next step descriptions"
+        },
+        "error": "string (optional) - Error message if submission failed"
+      },
+      "example_input_diy": {
+        "type": "DIY",
+        "data": {
+          "businesstype": "domestic-llc",
+          "businessName1": "Tech Solutions LLC",
+          "businessName2": "Digital Solutions LLC",
+          "naicsCode": "541511",
+          "naicsSubCode": "541511001",
+          "principalAddress1": "123 Main Street",
+          "principalCity": "Atlanta",
+          "principalState": "GA",
+          "principalZip": "30309",
+          "primaryEmail": "info@techsolutions.com",
+          "confirmPrimaryEmail": "info@techsolutions.com",
+          "county": "Fulton",
+          "organizerInfo": "John Doe, 123 Main St, Atlanta, GA 30309",
+          "agreeToTerms": true,
+          "agreeToPayment": true
+        }
+      },
+      "example_input_assisted": {
+        "type": "ASSISTED",
+        "data": {
+          "businesstype": "domestic-llc",
+          "businessName": "Marketing Agency LLC",
+          "businessDescription": "Full-service digital marketing agency specializing in social media and content creation",
+          "phone": "+1-555-123-4567",
+          "preferredContactMethod": "Email",
+          "additionalServices": ["ein", "registered-agent", "operating-agreement"],
+          "agreeToTerms": true,
+          "agreeToPayment": true
+        }
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "submissionId": "SUB_1705312200000",
+          "estimatedProcessingTime": "3-5 business days",
+          "nextSteps": [
+            "Review submitted information",
+            "Process payment",
+            "File with Georgia Secretary of State",
+            "Send confirmation documents"
+          ]
+        }
+      },
+      "example_output_error": {
+        "success": false,
+        "error": "Missing required field: businessName1"
+      }
+    },
+    "getSubmissionStatus": {
+      "endpoint": "GET /api/forms/status/{submissionId}",
+      "input": {
+        "submissionId": "string (required) - Submission ID to check",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        }
+      },
+      "output": {
+        "success": "boolean - Whether the request was successful",
+        "data": {
+          "submissionId": "string - Submission identifier",
+          "status": "string - Current status (pending, processing, completed, failed)",
+          "type": "string - Service type (DIY or ASSISTED)",
+          "submittedAt": "string (ISO date) - Submission timestamp",
+          "lastUpdated": "string (ISO date) - Last status update",
+          "documents": "array (optional) - Array of generated documents",
+          "notes": "string (optional) - Additional status notes"
+        },
+        "error": "string (optional) - Error message if not found"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "submissionId": "SUB_1705312200000",
+          "status": "processing",
+          "type": "DIY",
+          "submittedAt": "2024-01-15T12:30:00.000Z",
+          "lastUpdated": "2024-01-15T14:15:00.000Z",
+          "documents": [],
+          "notes": "Application submitted to Georgia Secretary of State"
+        }
+      }
+    }
+  },
+  "submissionsApi": {
+    "getUserSubmissions": {
+      "endpoint": "GET /api/submissions",
+      "input": {
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "query_params": {
+          "page": "number (optional) - Page number (default: 1)",
+          "limit": "number (optional) - Items per page (default: 10)",
+          "status": "string (optional) - Filter by status (pending, processing, completed, rejected)"
+        }
+      },
+      "output": {
+        "success": "boolean - Whether the request was successful",
+        "data": {
+          "submissions": [
+            {
+              "id": "string - Unique submission identifier",
+              "type": "string - Service type (DIY or ASSISTED)",
+              "businessName": "string - Business name",
+              "status": "string - Current status (pending, processing, completed, rejected)",
+              "submittedAt": "string (ISO date) - Submission timestamp",
+              "lastUpdated": "string (ISO date) - Last status update",
+              "totalAmount": "number - Total payment amount",
+              "documents": "array (optional) - Array of document objects",
+              "notes": "string (optional) - Additional status notes"
+            }
+          ],
+          "pagination": {
+            "page": "number - Current page",
+            "limit": "number - Items per page",
+            "total": "number - Total submissions",
+            "totalPages": "number - Total pages"
+          }
+        },
+        "error": "string (optional) - Error message if request failed"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "submissions": [
+            {
+              "id": "SUB_1705312200000",
+              "type": "DIY",
+              "businessName": "Tech Solutions LLC",
+              "status": "processing",
+              "submittedAt": "2024-01-15T12:30:00.000Z",
+              "lastUpdated": "2024-01-16T10:15:00.000Z",
+              "totalAmount": 99,
+              "notes": "Application submitted to Georgia Secretary of State"
+            },
+            {
+              "id": "SUB_1705226800000",
+              "type": "ASSISTED",
+              "businessName": "Marketing Agency LLC",
+              "status": "completed",
+              "submittedAt": "2024-01-14T09:15:00.000Z",
+              "lastUpdated": "2024-01-16T14:30:00.000Z",
+              "totalAmount": 548,
+              "documents": [
+                {
+                  "id": "DOC_1",
+                  "name": "Certificate of Organization.pdf",
+                  "url": "#",
+                  "type": "application/pdf"
+                },
+                {
+                  "id": "DOC_2",
+                  "name": "Operating Agreement.pdf",
+                  "url": "#",
+                  "type": "application/pdf"
+                }
+              ]
+            }
+          ],
+          "pagination": {
+            "page": 1,
+            "limit": 10,
+            "total": 2,
+            "totalPages": 1
+          }
+        }
+      },
+      "example_output_error": {
+        "success": false,
+        "error": "Authentication required"
+      }
+    },
+    "getSubmissionDetails": {
+      "endpoint": "GET /api/submissions/{submissionId}",
+      "input": {
+        "submissionId": "string (required) - Submission ID to retrieve",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        }
+      },
+      "output": {
+        "success": "boolean - Whether the request was successful",
+        "data": {
+          "id": "string - Unique submission identifier",
+          "type": "string - Service type (DIY or ASSISTED)",
+          "businessName": "string - Business name",
+          "businessType": "string - Type of business entity",
+          "status": "string - Current status (pending, processing, completed, rejected)",
+          "submittedAt": "string (ISO date) - Submission timestamp",
+          "lastUpdated": "string (ISO date) - Last status update",
+          "totalAmount": "number - Total payment amount",
+          "documents": "array (optional) - Array of document objects",
+          "notes": "string (optional) - Additional status notes",
+          "timeline": "array (optional) - Array of timeline events",
+          "businessDetails": "object (optional) - Business details from submission"
+        },
+        "error": "string (optional) - Error message if request failed"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "id": "SUB_1705312200000",
+          "type": "DIY",
+          "businessName": "Tech Solutions LLC",
+          "businessType": "Limited Liability Company (LLC)",
+          "status": "processing",
+          "submittedAt": "2024-01-15T12:30:00.000Z",
+          "lastUpdated": "2024-01-16T10:15:00.000Z",
+          "totalAmount": 99,
+          "notes": "Application submitted to Georgia Secretary of State",
+          "timeline": [
+            {
+              "date": "2024-01-15T12:30:00.000Z",
+              "status": "Submitted",
+              "description": "Your DIY registration has been submitted successfully."
+            },
+            {
+              "date": "2024-01-15T14:45:00.000Z",
+              "status": "Payment Confirmed",
+              "description": "Payment of $99.00 has been confirmed."
+            },
+            {
+              "date": "2024-01-16T10:15:00.000Z",
+              "status": "Processing",
+              "description": "Your application is being processed by the Georgia Secretary of State."
+            }
+          ],
+          "businessDetails": {
+            "businessType": "Limited Liability Company (LLC)",
+            "businessName": "Tech Solutions LLC",
+            "naicsCode": "541511",
+            "naicsSubCode": "541511001",
+            "principalAddress": "123 Main Street, Atlanta, GA 30309",
+            "county": "Fulton",
+            "organizerInfo": "John Doe, 123 Main St, Atlanta, GA 30309"
+          }
+        }
+      },
+      "example_output_error": {
+        "success": false,
+        "error": "Submission not found"
+      }
+    }
+  },
+  "paymentApi": {
+    "createPaymentIntent": {
+      "endpoint": "POST /api/payments/create-intent",
+      "input": {
+        "submissionId": "string (required) - Form submission ID",
+        "amount": "number (required) - Payment amount in cents",
+        "currency": "string (optional) - Currency code (default: usd)",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        }
+      },
+      "output": {
+        "success": "boolean - Whether the intent was created",
+        "data": {
+          "clientSecret": "string - Stripe client secret for frontend",
+          "paymentIntentId": "string - Payment intent identifier"
+        },
+        "error": "string (optional) - Error message"
+      },
+      "example_input": {
+        "submissionId": "SUB_1705312200000",
+        "amount": 9900,
+        "currency": "usd"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "clientSecret": "pi_1234567890_secret_abcdef",
+          "paymentIntentId": "pi_1234567890"
+        }
+      }
+    },
+    "confirmPayment": {
+      "endpoint": "POST /api/payments/confirm",
+      "input": {
+        "paymentIntentId": "string (required) - Payment intent ID",
+        "submissionId": "string (required) - Form submission ID",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        }
+      },
+      "output": {
+        "success": "boolean - Whether payment was confirmed",
+        "data": {
+          "paymentStatus": "string - Payment status",
+          "transactionId": "string - Transaction identifier",
+          "receiptUrl": "string - Receipt URL"
+        },
+        "error": "string (optional) - Error message"
+      },
+      "example_output_success": {
+        "success": true,
+        "data": {
+          "paymentStatus": "succeeded",
+          "transactionId": "txn_1234567890",
+          "receiptUrl": "https://pay.stripe.com/receipts/..."
+        }
+      }
+    }
+  },
+  "additionalServices": {
+    "available_services": {
+      "ein": {
+        "id": "ein",
+        "name": "EIN (Tax ID) Application",
+        "description": "Federal Employer Identification Number application",
+        "price": 50,
+        "estimatedTime": "1-2 business days"
+      },
+      "registered-agent": {
+        "id": "registered-agent",
+        "name": "Registered Agent Service",
+        "description": "Professional registered agent service for one year",
+        "price": 99,
+        "estimatedTime": "Immediate",
+        "recurring": "yearly"
+      },
+      "operating-agreement": {
+        "id": "operating-agreement",
+        "name": "Operating Agreement",
+        "description": "Custom operating agreement for your LLC",
+        "price": 150,
+        "estimatedTime": "3-5 business days"
+      },
+      "business-license": {
+        "id": "business-license",
+        "name": "Business License Research",
+        "description": "Research required licenses for your business type",
+        "price": 75,
+        "estimatedTime": "2-3 business days"
+      },
+      "document-review": {
+        "id": "document-review",
+        "name": "Document Review & Consultation",
+        "description": "Professional review of all documents and consultation",
+        "price": 50,
+        "estimatedTime": "1 business day"
+      },
+      "expedited-processing": {
+        "id": "expedited-processing",
+        "name": "Expedited Processing",
+        "description": "Rush processing for faster completion",
+        "price": 100,
+        "estimatedTime": "Reduces processing time by 50%"
+      }
+    }
+  },
+  "errorCodes": {
+    "AUTH001": "Invalid credentials",
+    "AUTH002": "Token expired",
+    "AUTH003": "Account not found",
+    "AUTH004": "Email already exists",
+    "FORM001": "Missing required field",
+    "FORM002": "Invalid business type",
+    "FORM003": "Submission not found",
+    "FORM004": "Submission already processed",
+    "PAY001": "Payment failed",
+    "PAY002": "Invalid payment amount",
+    "PAY003": "Payment already processed",
+    "SYS001": "Internal server error",
+    "SYS002": "Service temporarily unavailable"
+  }
+}
