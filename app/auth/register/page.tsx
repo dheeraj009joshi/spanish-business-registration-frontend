@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, User, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
-import { GoogleSignInButton } from "../../../components/google-signin-button"
+import { GoogleSignInButton } from "@/components/google-signin-button"
 import { authApi } from "@/lib/api"
 
 export default function RegisterPage() {
@@ -29,6 +29,7 @@ export default function RegisterPage() {
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [error, setError] = useState("")
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const { signup, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
 
@@ -76,7 +77,11 @@ export default function RegisterPage() {
       if (result.success && result.data) {
         const { user, token } = result.data
         authApi.storeAuthData(user, token)
-        router.push("/")
+
+        setShowSuccess(true)
+        setTimeout(() => {
+          router.push("/")
+        }, 1500)
       } else {
         setError(result.error || "Google sign-up failed")
       }
@@ -117,6 +122,19 @@ export default function RegisterPage() {
             <CardContent className="space-y-4">
               {error && (
                 <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>
+              )}
+
+              {showSuccess && (
+                <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Account created successfully! Redirecting...
+                </div>
               )}
 
               {/* Google Sign-In Button */}
