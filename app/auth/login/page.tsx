@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
+import { GoogleSignInButton } from "../../../components/google-signin-button"
+import { authApi } from "@/lib/api"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -20,6 +22,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState("")
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const { login, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
 
@@ -43,6 +46,35 @@ export default function LoginPage() {
     }
   }
 
+  const handleGoogleSuccess = async (result: any) => {
+    setIsGoogleLoading(true)
+    setError("")
+
+    try {
+      if (result.success && result.data) {
+        const { user, token } = result.data
+        authApi.storeAuthData(user, token)
+
+        // Redirect to stored path or home
+        const redirectPath = localStorage.getItem("redirect_after_login") || "/"
+        localStorage.removeItem("redirect_after_login")
+        router.push(redirectPath)
+      } else {
+        setError(result.error || "Google sign-in failed")
+      }
+    } catch (error) {
+      console.error("Google sign-in error:", error)
+      setError("Google sign-in failed")
+    } finally {
+      setIsGoogleLoading(false)
+    }
+  }
+
+  const handleGoogleError = (error: string) => {
+    setError(error)
+    setIsGoogleLoading(false)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white flex flex-col">
       <header className="py-4 px-6">
@@ -64,12 +96,30 @@ export default function LoginPage() {
               <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
               <CardDescription>Sign in to your account to continue</CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>
-                )}
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>
+              )}
 
+              {/* Google Sign-In Button */}
+              <GoogleSignInButton
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                isLoading={isGoogleLoading}
+                text="Sign in with Google"
+                mode="login"
+              />
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -127,7 +177,11 @@ export default function LoginPage() {
                   </Label>
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading || isGoogleLoading}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />

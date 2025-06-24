@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, User, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
+import { GoogleSignInButton } from "../../../components/google-signin-button"
+import { authApi } from "@/lib/api"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -26,6 +28,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreeToTerms, setAgreeToTerms] = useState(false)
   const [error, setError] = useState("")
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const { signup, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
 
@@ -65,6 +68,31 @@ export default function RegisterPage() {
     }
   }
 
+  const handleGoogleSuccess = async (result: any) => {
+    setIsGoogleLoading(true)
+    setError("")
+
+    try {
+      if (result.success && result.data) {
+        const { user, token } = result.data
+        authApi.storeAuthData(user, token)
+        router.push("/")
+      } else {
+        setError(result.error || "Google sign-up failed")
+      }
+    } catch (error) {
+      console.error("Google sign-up error:", error)
+      setError("Google sign-up failed")
+    } finally {
+      setIsGoogleLoading(false)
+    }
+  }
+
+  const handleGoogleError = (error: string) => {
+    setError(error)
+    setIsGoogleLoading(false)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white flex flex-col">
       <header className="py-4 px-6">
@@ -86,12 +114,30 @@ export default function RegisterPage() {
               <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
               <CardDescription>Join thousands of entrepreneurs in Georgia</CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>
-                )}
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{error}</div>
+              )}
 
+              {/* Google Sign-In Button */}
+              <GoogleSignInButton
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                isLoading={isGoogleLoading}
+                text="Sign up with Google"
+                mode="signup"
+              />
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name</Label>
@@ -208,7 +254,11 @@ export default function RegisterPage() {
                   </label>
                 </div>
 
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  disabled={isLoading || isGoogleLoading}
+                >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
