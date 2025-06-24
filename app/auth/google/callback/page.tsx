@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { authApi } from "@/lib/api"
 
 export default function GoogleCallbackPage() {
   const searchParams = useSearchParams()
@@ -9,48 +10,75 @@ export default function GoogleCallbackPage() {
   const [message, setMessage] = useState("Processing authentication...")
 
   useEffect(() => {
-    const success = searchParams.get("success")
-    const error = searchParams.get("error")
-    const user = searchParams.get("user")
-    const token = searchParams.get("token")
+    const handleCallback = async () => {
+      try {
+        const success = searchParams.get("success")
+        const error = searchParams.get("error")
+        const userParam = searchParams.get("user")
+        const token = searchParams.get("token")
 
-    if (success === "true" && user && token) {
-      setStatus("success")
-      setMessage("Authentication successful! Closing window...")
+        if (success === "true" && userParam && token) {
+          // Parse the user data
+          const user = JSON.parse(decodeURIComponent(userParam))
 
-      // Send success message to parent window
-      setTimeout(() => {
-        window.opener?.postMessage(
-          {
-            type: "GOOGLE_AUTH_SUCCESS",
-            result: {
-              success: true,
-              data: {
-                user: JSON.parse(decodeURIComponent(user)),
-                token: token,
+          setStatus("success")
+          setMessage("Authentication successful! Closing window...")
+
+          // Store the authentication data using your existing authApi
+          authApi.storeAuthData(user, token)
+
+          // Send success message to parent window
+          setTimeout(() => {
+            window.opener?.postMessage(
+              {
+                type: "GOOGLE_AUTH_SUCCESS",
+                result: {
+                  success: true,
+                  data: {
+                    user: user,
+                    token: token,
+                  },
+                },
               },
-            },
-          },
-          window.location.origin,
-        )
-        window.close()
-      }, 1000)
-    } else {
-      setStatus("error")
-      setMessage(error || "Authentication failed")
+              window.location.origin,
+            )
+            window.close()
+          }, 1000)
+        } else {
+          setStatus("error")
+          setMessage(error || "Authentication failed")
 
-      // Send error message to parent window
-      setTimeout(() => {
-        window.opener?.postMessage(
-          {
-            type: "GOOGLE_AUTH_ERROR",
-            error: error || "Authentication failed",
-          },
-          window.location.origin,
-        )
-        window.close()
-      }, 2000)
+          // Send error message to parent window
+          setTimeout(() => {
+            window.opener?.postMessage(
+              {
+                type: "GOOGLE_AUTH_ERROR",
+                error: error || "Authentication failed",
+              },
+              window.location.origin,
+            )
+            window.close()
+          }, 2000)
+        }
+      } catch (error) {
+        console.error("Callback error:", error)
+        setStatus("error")
+        setMessage("Failed to process authentication data")
+
+        setTimeout(() => {
+          window.opener?.postMessage(
+            {
+              type: "GOOGLE_AUTH_ERROR",
+              error: "Failed to process authentication data",
+            },
+            window.location.origin,
+          )
+          window.close()
+        }, 2000)
+      }
     }
+
+    handleCallback()
   }, [searchParams])
 
   return (

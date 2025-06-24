@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
 interface GoogleSignInButtonProps {
-  onSuccess: (result: any) => void
-  onError: (error: string) => void
+  onSuccess?: (result: any) => void
+  onError?: (error: string) => void
   isLoading?: boolean
   text?: string
   mode?: "login" | "signup"
@@ -25,7 +25,7 @@ export function GoogleSignInButton({
     setIsGoogleLoading(true)
 
     try {
-      const API_BASE_URL = "https://api.georgia.registrarnegocio.com"
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.georgia.registrarnegocio.com"
 
       // Create a popup window for Google OAuth
       const popup = window.open(
@@ -41,7 +41,7 @@ export function GoogleSignInButton({
       // Listen for messages from the popup
       const messageListener = (event: MessageEvent) => {
         // Verify origin for security
-        if (event.origin !== API_BASE_URL && event.origin !== window.location.origin) {
+        if (event.origin !== window.location.origin) {
           return
         }
 
@@ -49,12 +49,21 @@ export function GoogleSignInButton({
           popup.close()
           window.removeEventListener("message", messageListener)
           setIsGoogleLoading(false)
-          onSuccess(event.data.result)
+
+          // Force a page refresh to update the auth state
+          window.location.reload()
+
+          if (onSuccess) {
+            onSuccess(event.data.result)
+          }
         } else if (event.data.type === "GOOGLE_AUTH_ERROR") {
           popup.close()
           window.removeEventListener("message", messageListener)
           setIsGoogleLoading(false)
-          onError(event.data.error || "Google authentication failed")
+
+          if (onError) {
+            onError(event.data.error || "Google authentication failed")
+          }
         }
       }
 
@@ -66,7 +75,10 @@ export function GoogleSignInButton({
           clearInterval(checkClosed)
           window.removeEventListener("message", messageListener)
           setIsGoogleLoading(false)
-          onError("Authentication cancelled")
+
+          if (onError) {
+            onError("Authentication cancelled")
+          }
         }
       }, 1000)
 
@@ -78,12 +90,18 @@ export function GoogleSignInButton({
         clearInterval(checkClosed)
         window.removeEventListener("message", messageListener)
         setIsGoogleLoading(false)
-        onError("Authentication timeout")
+
+        if (onError) {
+          onError("Authentication timeout")
+        }
       }, 300000)
     } catch (error) {
       console.error("Google Sign-In error:", error)
-      onError(error instanceof Error ? error.message : "Google Sign-In failed")
       setIsGoogleLoading(false)
+
+      if (onError) {
+        onError(error instanceof Error ? error.message : "Google Sign-In failed")
+      }
     }
   }
 
