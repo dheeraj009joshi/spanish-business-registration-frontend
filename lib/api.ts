@@ -1,8 +1,6 @@
 "use client"
 
-// Use environment variable for API URL, fallback to localhost for development
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2000/api"
-
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.georgia.registrarnegocio.com/api"
 // Types
 export interface User {
   id: string
