@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 
+// API Base URL - should NOT include /api suffix
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2000"
 
 export default function AdminLoginPage() {

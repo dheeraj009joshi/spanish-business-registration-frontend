@@ -1,6 +1,7 @@
 "use client"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.georgia.registrarnegocio.com/api"
+// API Base URL - should NOT include /api suffix
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.georgia.registrarnegocio.com"
 // Types
 export interface User {
   id: string
@@ -150,16 +151,16 @@ async function apiRequest<T>(
 // Auth API
 export const authApi = {
   async login(credentials: LoginRequest): Promise<ApiResponse<{ user: User; token: string }>> {
-    return apiRequest<{ user: User; token: string }>("/auth/login", "POST", credentials)
+    return apiRequest<{ user: User; token: string }>("/api/auth/login", "POST", credentials)
   },
 
   async signup(userData: SignupRequest): Promise<ApiResponse<{ user: User; token: string }>> {
-    return apiRequest<{ user: User; token: string }>("/auth/signup", "POST", userData)
+    return apiRequest<{ user: User; token: string }>("/api/auth/signup", "POST", userData)
   },
 
   async logout(): Promise<void> {
     try {
-      await apiRequest("/auth/logout", "POST")
+      await apiRequest("/api/auth/logout", "POST")
     } finally {
       localStorage.removeItem("auth_token")
       localStorage.removeItem("user")
@@ -184,7 +185,7 @@ export const authApi = {
   },
 
   async fetchCurrentUser(): Promise<ApiResponse<{ user: User }>> {
-    const result = await apiRequest<{ user: User }>("/auth/me", "GET")
+    const result = await apiRequest<{ user: User }>("/api/auth/me", "GET")
 
     // If the request fails due to auth issues, clear local storage
     if (!result.success && result.error?.includes("Authentication failed")) {
@@ -203,7 +204,7 @@ export const authApi = {
   // Password Reset Functions
   async requestPasswordReset(email: string): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/request-reset`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/request-reset`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -236,7 +237,7 @@ export const authApi = {
 
   async resetPassword(token: string, newPassword: string): Promise<ApiResponse<any>> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/reset-password/${token}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password/${token}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -270,15 +271,15 @@ export const authApi = {
 // Form API
 export const formApi = {
   async submitForm(formData: FormSubmissionRequest): Promise<ApiResponse<{ submissionId: string }>> {
-    return apiRequest<{ submissionId: string }>("/forms/submit", "POST", formData)
+    return apiRequest<{ submissionId: string }>("/api/forms/submit", "POST", formData)
   },
 
   async getSubmissionStatus(submissionId: string): Promise<ApiResponse<any>> {
-    return apiRequest(`/submissions/${submissionId}`, "GET")
+    return apiRequest(`/api/submissions/${submissionId}`, "GET")
   },
 
   async getSubmissions(userId?: string): Promise<FormSubmission[]> {
-    const result = await apiRequest<{ submissions: any[] }>("/submissions", "GET")
+    const result = await apiRequest<{ submissions: any[] }>("/api/submissions", "GET")
     if (result.success && result.data?.submissions) {
       return result.data.submissions.map((sub: any) => ({
         id: sub.id,
@@ -299,7 +300,7 @@ export const formApi = {
   },
 
   async getSubmission(id: string): Promise<FormSubmission | null> {
-    const result = await apiRequest<any>(`/submissions/${id}`, "GET")
+    const result = await apiRequest<any>(`/api/submissions/${id}`, "GET")
     if (result.success && result.data) {
       const sub = result.data
       return {
@@ -330,7 +331,7 @@ export const submissionsApi = {
     if (options.page) queryParams.append("page", options.page.toString())
     if (options.limit) queryParams.append("limit", options.limit.toString())
     
-    const result = await apiRequest<any>(`/submissions?${queryParams.toString()}`, "GET")
+    const result = await apiRequest<any>(`/api/submissions?${queryParams.toString()}`, "GET")
     
     if (result.success && result.data) {
       // Transform submissions to match frontend format
@@ -371,7 +372,7 @@ export const submissionsApi = {
   },
 
   async getSubmissionDetails(submissionId: string): Promise<ApiResponse<any>> {
-    const result = await apiRequest<any>(`/submissions/${submissionId}`, "GET")
+    const result = await apiRequest<any>(`/api/submissions/${submissionId}`, "GET")
     
     if (result.success && result.data) {
       return {
@@ -412,7 +413,7 @@ export const submissionsApi = {
   },
 
   async getSubmissionNotes(submissionId: string): Promise<ApiResponse<any>> {
-    return apiRequest<any>(`/submissions/${submissionId}/notes`, "GET")
+    return apiRequest<any>(`/api/submissions/${submissionId}/notes`, "GET")
   },
 }
 
@@ -427,7 +428,7 @@ export const paymentApi = {
     type: "DIY" | "ASSISTED"
     additionalServices?: string[]
   }): Promise<ApiResponse<{ sessionId: string; url: string }>> {
-    return apiRequest("/payments/create-checkout-session", "POST", data)
+    return apiRequest("/api/payments/create-checkout-session", "POST", data)
   },
 
   /**
@@ -438,7 +439,7 @@ export const paymentApi = {
     submissionId: string
     amount: number
   }>> {
-    return apiRequest(`/payments/verify-session/${sessionId}`, "GET")
+    return apiRequest(`/api/payments/verify-session/${sessionId}`, "GET")
   },
 
   /**
@@ -449,7 +450,7 @@ export const paymentApi = {
     amount?: number
     message?: string
   }>> {
-    return apiRequest(`/payments/sync-payment/${submissionId}`, "POST")
+    return apiRequest(`/api/payments/sync-payment/${submissionId}`, "POST")
   },
 
   /**
@@ -476,7 +477,7 @@ export const paymentApi = {
     const params = new URLSearchParams()
     if (options.page) params.append("page", options.page.toString())
     if (options.limit) params.append("limit", options.limit.toString())
-    return apiRequest(`/payments/user-transactions?${params.toString()}`, "GET")
+    return apiRequest(`/api/payments/user-transactions?${params.toString()}`, "GET")
   },
 }
 
@@ -492,6 +493,6 @@ export const contactApi = {
     subject?: string
     message: string
   }): Promise<ApiResponse<{ id: string; message: string }>> {
-    return apiRequest("/admin/public/contact", "POST", data)
+    return apiRequest("/api/admin/public/contact", "POST", data)
   },
 }
