@@ -29,7 +29,7 @@ export function GoogleSignInButton({
 
       // Create a popup window for Google OAuth
       const popup = window.open(
-        `${API_BASE_URL}/api/auth/googleauth/sign?mode=${mode}`,
+        `${API_BASE_URL}/auth/googleauth/sign?mode=${mode}`,
         "googleSignIn",
         "width=500,height=600,scrollbars=yes,resizable=yes",
       )
