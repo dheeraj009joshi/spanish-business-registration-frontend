@@ -1,6 +1,7 @@
 "use client"
 
-const API_BASE_URL =  "https://api.georgia.registrarnegocio.com/api"
+// Use environment variable for API URL, fallback to localhost for development
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2000/api"
 
 // Types
 export interface User {
@@ -271,116 +272,54 @@ export const authApi = {
 // Form API
 export const formApi = {
   async submitForm(formData: FormSubmissionRequest): Promise<ApiResponse<{ submissionId: string }>> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    try {
-      const currentUser = authApi.getCurrentUser()
-      const userId = currentUser?.id || "user_001"
-
-      // Get existing submissions
-      const submissions = getSubmissionsFromStorage()
-
-      const newSubmission: FormSubmission = {
-        id: `sub_${Date.now()}`,
-        type: formData.type,
-        status: "PENDING",
-        businessName: formData.data.businessName || "Unnamed Business",
-        businessType: formData.data.businesstype || formData.data.businessType || "domestic-llc",
-        submittedDate: new Date().toISOString(),
-        updatedDate: new Date().toISOString(),
-        data: formData.data,
-        userId: userId,
-        totalAmount: formData.data.totalAmount || 0,
-        notes: formData.data.notes || "",
-        documents: [],
-      }
-
-      // Add new submission
-      submissions.push(newSubmission)
-
-      // Save to localStorage
-      saveSubmissionsToStorage(submissions)
-
-      return {
-        success: true,
-        data: { submissionId: newSubmission.id },
-        message: "Form submitted successfully",
-      }
-    } catch (error) {
-      console.error("Error submitting form:", error)
-      return {
-        success: false,
-        error: "Failed to submit form",
-      }
-    }
+    return apiRequest<{ submissionId: string }>("/forms/submit", "POST", formData)
   },
 
   async getSubmissionStatus(submissionId: string): Promise<ApiResponse<any>> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 300))
-
-    try {
-      const submissions = getSubmissionsFromStorage()
-      const submission = submissions.find((sub) => sub.id === submissionId)
-
-      if (!submission) {
-        return {
-          success: false,
-          error: "Submission not found",
-        }
-      }
-
-      return {
-        success: true,
-        data: {
-          id: submission.id,
-          status: submission.status,
-          businessName: submission.businessName,
-          businessType: submission.businessType,
-          submittedDate: submission.submittedDate,
-          updatedDate: submission.updatedDate,
-        },
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: "Failed to fetch submission status",
-      }
-    }
+    return apiRequest(`/submissions/${submissionId}`, "GET")
   },
 
   async getSubmissions(userId?: string): Promise<FormSubmission[]> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    try {
-      const submissions = getSubmissionsFromStorage()
-      const currentUser = authApi.getCurrentUser()
-      const targetUserId = userId || currentUser?.id || "user_001"
-
-      // Filter submissions by user ID - only return submissions for the current user
-      return submissions.filter((sub) => sub.userId === targetUserId)
-    } catch (error) {
-      console.error("Error fetching submissions:", error)
-      return []
+    const result = await apiRequest<{ submissions: any[] }>("/submissions", "GET")
+    if (result.success && result.data?.submissions) {
+      return result.data.submissions.map((sub: any) => ({
+        id: sub.id,
+        type: sub.type,
+        status: sub.status?.toUpperCase() || "PENDING",
+        businessName: sub.businessName || "Unnamed Business",
+        businessType: sub.businessType || "domestic-llc",
+        submittedDate: sub.submittedAt,
+        updatedDate: sub.lastUpdated,
+        data: sub.data || {},
+        userId: sub.userId,
+        totalAmount: sub.totalAmount || 0,
+        notes: sub.notes || "",
+        documents: sub.documents || [],
+      }))
     }
+    return []
   },
 
   async getSubmission(id: string): Promise<FormSubmission | null> {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 300))
-
-    try {
-      const submissions = getSubmissionsFromStorage()
-      const currentUser = authApi.getCurrentUser()
-      const userId = currentUser?.id || "user_001"
-
-      return submissions.find((sub) => sub.id === id && sub.userId === userId) || null
-    } catch (error) {
-      console.error("Error fetching submission:", error)
-      return null
+    const result = await apiRequest<any>(`/submissions/${id}`, "GET")
+    if (result.success && result.data) {
+      const sub = result.data
+      return {
+        id: sub.id,
+        type: sub.type,
+        status: sub.status?.toUpperCase() || "PENDING",
+        businessName: sub.businessName || "Unnamed Business",
+        businessType: sub.businessType || "domestic-llc",
+        submittedDate: sub.submittedAt,
+        updatedDate: sub.lastUpdated,
+        data: sub.businessDetails || {},
+        userId: sub.userId,
+        totalAmount: sub.totalAmount || 0,
+        notes: sub.notes || "",
+        documents: sub.documents || [],
+      }
     }
+    return null
   },
 }
 
@@ -389,86 +328,172 @@ export const submissionsApi = {
   async getUserSubmissions(
     options: { page?: number; limit?: number; status?: string } = {},
   ): Promise<ApiResponse<any>> {
-    try {
-      const currentUser = authApi.getCurrentUser()
-      const userId = currentUser?.id || "user_001"
+    const queryParams = new URLSearchParams()
+    if (options.page) queryParams.append("page", options.page.toString())
+    if (options.limit) queryParams.append("limit", options.limit.toString())
+    
+    const result = await apiRequest<any>(`/submissions?${queryParams.toString()}`, "GET")
+    
+    if (result.success && result.data) {
+      // Transform submissions to match frontend format
+      const transformedSubmissions = result.data.submissions?.map((sub: any) => ({
+        id: sub.id,
+        type: sub.type,
+        businessName: sub.businessName || "Unnamed Business",
+        status: sub.status?.toLowerCase() || "pending",
+        submittedAt: sub.submittedAt,
+        lastUpdated: sub.lastUpdated,
+        totalAmount: sub.totalAmount || 0,
+        notes: sub.notes || "",
+        documents: sub.documents || [],
+        data: sub.data || {},
+      })) || []
 
-      // Get user's submissions
-      const submissions = getSubmissionsFromStorage()
-      const userSubmissions = submissions.filter((sub) => sub.userId === userId)
-
-      // Filter by status if provided
-      let filteredSubmissions = userSubmissions
+      // Filter by status on client side if needed
+      let filteredSubmissions = transformedSubmissions
       if (options.status && options.status !== "all") {
-        filteredSubmissions = userSubmissions.filter(
-          (sub) => sub.status.toLowerCase() === options.status?.toLowerCase(),
+        filteredSubmissions = transformedSubmissions.filter(
+          (sub: any) => sub.status.toLowerCase() === options.status?.toLowerCase(),
         )
       }
-
-      // Apply pagination
-      const page = options.page || 1
-      const limit = options.limit || 10
-      const startIndex = (page - 1) * limit
-      const endIndex = startIndex + limit
-      const paginatedSubmissions = filteredSubmissions.slice(startIndex, endIndex)
 
       return {
         success: true,
         data: {
-          submissions: paginatedSubmissions,
-          page: page,
-          limit: limit,
-          total: filteredSubmissions.length,
-          totalPages: Math.ceil(filteredSubmissions.length / limit),
+          submissions: filteredSubmissions,
+          page: result.data.pagination?.page || options.page || 1,
+          limit: result.data.pagination?.limit || options.limit || 10,
+          total: result.data.pagination?.total || filteredSubmissions.length,
+          totalPages: result.data.pagination?.totalPages || Math.ceil(filteredSubmissions.length / (options.limit || 10)),
         },
       }
-    } catch (error) {
-      console.error("Error fetching user submissions:", error)
-      return {
-        success: false,
-        error: "Failed to fetch submissions",
-      }
     }
+    
+    return result
   },
 
   async getSubmissionDetails(submissionId: string): Promise<ApiResponse<any>> {
-    try {
-      const submissions = getSubmissionsFromStorage()
-      const currentUser = authApi.getCurrentUser()
-      const userId = currentUser?.id || "user_001"
-
-      const submission = submissions.find((sub) => sub.id === submissionId && sub.userId === userId)
-
-      if (!submission) {
-        return {
-          success: false,
-          error: "Submission not found",
-        }
-      }
-
+    const result = await apiRequest<any>(`/submissions/${submissionId}`, "GET")
+    
+    if (result.success && result.data) {
       return {
         success: true,
-        data: submission,
-      }
-    } catch (error) {
-      console.error("Error fetching submission details:", error)
-      return {
-        success: false,
-        error: "Failed to fetch submission details",
+        data: {
+          id: result.data.id,
+          submissionId: result.data.submissionId,
+          type: result.data.type,
+          businessName: result.data.businessName || "Unnamed Business",
+          businessType: result.data.businessType,
+          email: result.data.email,
+          phone: result.data.phone,
+          status: result.data.status?.toLowerCase() || "pending",
+          paymentStatus: result.data.paymentStatus || "unpaid",
+          submittedAt: result.data.submittedAt,
+          lastUpdated: result.data.lastUpdated,
+          totalAmount: result.data.totalAmount || 0,
+          notes: result.data.notes || "",
+          adminNotes: result.data.adminNotes || [],
+          documents: result.data.documents || [],
+          timeline: result.data.timeline || [],
+          transactions: result.data.transactions || [],
+          data: result.data.data || {},
+          businessAddress: result.data.businessAddress || {},
+          personalAddress: result.data.personalAddress || {},
+          additionalServices: result.data.additionalServices || [],
+          industry: result.data.industry || "",
+          businessDescription: result.data.businessDescription || "",
+        },
       }
     }
+    
+    return result
+  },
+
+  async getSubmissionById(submissionId: string): Promise<ApiResponse<any>> {
+    return this.getSubmissionDetails(submissionId)
+  },
+
+  async getSubmissionNotes(submissionId: string): Promise<ApiResponse<any>> {
+    return apiRequest<any>(`/submissions/${submissionId}/notes`, "GET")
   },
 }
 
-// Payment API
+// Payment API - Secure Stripe Integration
 export const paymentApi = {
-  async createPaymentIntent(data: { submissionId: string; amount: number; currency?: string }): Promise<
-    ApiResponse<any>
-  > {
-    return apiRequest("/payments/create-intent", "POST", data)
+  /**
+   * Create a Stripe Checkout Session
+   * Payment status is ONLY updated via Stripe webhooks (secure approach)
+   */
+  async createCheckoutSession(data: { 
+    submissionId?: string
+    type: "DIY" | "ASSISTED"
+    additionalServices?: string[]
+  }): Promise<ApiResponse<{ sessionId: string; url: string }>> {
+    return apiRequest("/payments/create-checkout-session", "POST", data)
   },
 
-  async confirmPayment(data: { paymentIntentId: string; submissionId: string }): Promise<ApiResponse<any>> {
-    return apiRequest("/payments/confirm", "POST", data)
+  /**
+   * Verify a checkout session status and update payment if paid
+   */
+  async verifySession(sessionId: string): Promise<ApiResponse<{
+    status: string
+    submissionId: string
+    amount: number
+  }>> {
+    return apiRequest(`/payments/verify-session/${sessionId}`, "GET")
+  },
+
+  /**
+   * Sync payment status from Stripe for a submission
+   */
+  async syncPaymentStatus(submissionId: string): Promise<ApiResponse<{
+    paymentStatus: string
+    amount?: number
+    message?: string
+  }>> {
+    return apiRequest(`/payments/sync-payment/${submissionId}`, "POST")
+  },
+
+  /**
+   * Get user's transaction history
+   */
+  async getUserTransactions(options: { page?: number; limit?: number } = {}): Promise<ApiResponse<{
+    transactions: Array<{
+      id: string
+      submissionId: string
+      type: string
+      amount: number
+      currency: string
+      status: string
+      createdAt: string
+      paidAt?: string
+    }>
+    pagination: {
+      page: number
+      limit: number
+      total: number
+      totalPages: number
+    }
+  }>> {
+    const params = new URLSearchParams()
+    if (options.page) params.append("page", options.page.toString())
+    if (options.limit) params.append("limit", options.limit.toString())
+    return apiRequest(`/payments/user-transactions?${params.toString()}`, "GET")
+  },
+}
+
+// Contact API
+export const contactApi = {
+  /**
+   * Submit a contact form inquiry
+   */
+  async submitContactForm(data: {
+    name: string
+    email: string
+    phone?: string
+    subject?: string
+    message: string
+  }): Promise<ApiResponse<{ id: string; message: string }>> {
+    return apiRequest("/admin/public/contact", "POST", data)
   },
 }

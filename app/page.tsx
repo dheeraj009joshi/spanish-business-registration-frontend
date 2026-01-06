@@ -12,9 +12,11 @@ import { StatsCounter } from "@/components/stats-counter"
 import { Footer } from "@/components/footer"
 import { Header } from "@/components/header"
 import { useLanguage } from "@/hooks/use-language"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function HomePage() {
   const { translations } = useLanguage()
+  const { isAuthenticated } = useAuth()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -194,9 +196,16 @@ export default function HomePage() {
             <Button size="lg" variant="secondary" asChild>
               <Link href="/register/assisted">Start Registration</Link>
             </Button>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10" asChild>
-              <Link href="/auth/login">Sign In</Link>
-            </Button>
+            {!isAuthenticated && (
+              <Button size="lg" variant="outline" className="bg-white text-green-700 border-white hover:bg-white/90" asChild>
+                <Link href="/auth/login">Sign In</Link>
+              </Button>
+            )}
+            {isAuthenticated && (
+              <Button size="lg" variant="outline" className="bg-white text-green-700 border-white hover:bg-white/90" asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+            )}
           </div>
         </div>
       </section>

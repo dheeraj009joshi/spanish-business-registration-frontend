@@ -3,13 +3,14 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, ArrowRight, CheckCircle, MessageCircle } from "lucide-react"
+import { ArrowLeft, ArrowRight, CheckCircle, MessageCircle, CreditCard, Shield, Lock } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ModernFormStep } from "@/components/modern-form-step"
 import { AuthGuard } from "@/components/auth-guard"
-import { formApi } from "@/lib/api"
+import { formApi, paymentApi } from "@/lib/api"
 import { useAuth } from "@/hooks/use-auth"
 import { useLanguage } from "@/hooks/use-language"
+import { useToast } from "@/hooks/use-toast"
 
 const steps = [
   {
@@ -111,29 +112,132 @@ const steps = [
     subtitle: "Please review your information before submitting",
     type: "review" as const,
   },
+  {
+    id: "payment",
+    title: "Complete Payment",
+    subtitle: "Secure payment powered by Stripe",
+    type: "payment" as const,
+  },
 ]
 
 export default function AssistedRegistrationPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submissionId, setSubmissionId] = useState<string | null>(null)
   const [formData, setFormData] = useState<Record<string, any>>({
-    businessType: "domestic-llc", // Default to LLC
-    personalState: "GA", // Default to Georgia
-    businessState: "GA", // Default to Georgia
+    businessType: "domestic-llc",
+    personalState: "GA",
+    businessState: "GA",
     additionalServices: [],
   })
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const { user } = useAuth()
-  const { translations } = useLanguage()
+  const { language } = useLanguage()
+  const { toast } = useToast()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
+  const calculatePrice = () => {
+    const basePrice = 299
+    let additionalServices = 0
+    const servicePrices: Record<string, number> = {
+      ein: 50,
+      "registered-agent": 99,
+      "operating-agreement": 150,
+      "business-license": 75,
+      "expedited-processing": 100,
+      "document-review": 50,
+    }
+
+    if (formData.additionalServices) {
+      formData.additionalServices.forEach((service: string) => {
+        additionalServices += servicePrices[service] || 0
+      })
+    }
+
+    return basePrice + additionalServices
+  }
+
+  const handleNext = async () => {
+    // If we're on the review step, submit the form first
+    if (steps[currentStep].type === "review") {
+      await handleSubmitForm()
+    } else if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
+    }
+  }
+
+  const handleSubmitForm = async () => {
+    setIsSubmitting(true)
+
+    try {
+      const totalAmount = calculatePrice()
+
+      const submissionData = {
+        ...formData,
+        totalAmount,
+        businessType: formData.businesstype || formData.businessType || "domestic-llc",
+      }
+
+      const result = await formApi.submitForm({
+        type: "ASSISTED",
+        data: submissionData,
+      })
+
+      if (result.success && result.data?.submissionId) {
+        setSubmissionId(result.data.submissionId)
+        setCurrentStep(currentStep + 1) // Move to payment step
+      } else {
+        toast({
+          title: "Submission Failed",
+          description: result.error || "Failed to submit registration",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      toast({
+        title: "Error",
+        description: "An error occurred while submitting the form",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handlePayment = async () => {
+    setIsSubmitting(true)
+
+    try {
+      const result = await paymentApi.createCheckoutSession({
+        submissionId: submissionId || undefined,
+        type: "ASSISTED",
+        additionalServices: formData.additionalServices || [],
+      })
+
+      if (result.success && result.data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = result.data.url
+      } else {
+        toast({
+          title: "Payment Error",
+          description: result.error || "Failed to create payment session",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error creating payment:", error)
+      toast({
+        title: "Error",
+        description: "An error occurred while processing payment",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -164,58 +268,6 @@ export default function AssistedRegistrationPage() {
     }))
   }
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true)
-
-    try {
-      // Calculate total amount based on selected services
-      const basePrice = 299 // Base price for assisted registration
-      const additionalServicesTotal = (formData.additionalServices || []).reduce((total: number, service: string) => {
-        switch (service) {
-          case "ein":
-            return total + 50
-          case "registered-agent":
-            return total + 99
-          case "operating-agreement":
-            return total + 150
-          case "business-license":
-            return total + 75
-          case "document-review":
-            return total + 50
-          case "expedited-processing":
-            return total + 100
-          default:
-            return total
-        }
-      }, 0)
-
-      const totalAmount = basePrice + additionalServicesTotal
-
-      // Prepare submission data
-      const submissionData = {
-        ...formData,
-        totalAmount,
-        businessType: formData.businesstype || formData.businessType || "domestic-llc",
-      }
-
-      const result = await formApi.submitForm({
-        type: "ASSISTED",
-        data: submissionData,
-      })
-
-      if (result.success) {
-        router.push(`/success?type=assisted&submissionId=${result.data?.submissionId}`)
-      } else {
-        alert("Submission failed: " + result.error)
-      }
-    } catch (error) {
-      console.error("Error submitting form:", error)
-      alert("An error occurred while submitting the form")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const canProceed = () => {
     const step = steps[currentStep]
     switch (step.type) {
@@ -233,9 +285,11 @@ export default function AssistedRegistrationPage() {
           }) || false
         )
       case "services":
-        return true // Optional step
+        return true
       case "review":
         return formData.agreeToTerms === true && formData.agreeToPayment === true
+      case "payment":
+        return true
       default:
         return false
     }
@@ -254,6 +308,130 @@ export default function AssistedRegistrationPage() {
       </div>
     )
   }
+
+  const totalPrice = calculatePrice()
+
+  // Payment Step Component
+  const PaymentStep = () => (
+    <div className="text-center h-full flex flex-col justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-2xl mx-auto"
+      >
+        {/* Success Icon */}
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <CheckCircle className="w-10 h-10 text-green-600" />
+        </div>
+
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-light mb-4 leading-tight text-gray-900">
+          {language === "es" ? "¡Registro Guardado!" : "Registration Saved!"}
+        </h1>
+        <p className="text-base md:text-lg text-gray-600 mb-8">
+          {language === "es" 
+            ? "Tu información ha sido guardada. Completa el pago para procesar tu registro."
+            : "Your information has been saved. Complete payment to process your registration."}
+        </p>
+
+        {/* Payment Summary Card */}
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 md:p-8 mb-8 shadow-lg">
+          <div className="flex items-center justify-center mb-6">
+            <Lock className="w-5 h-5 text-green-600 mr-2" />
+            <span className="text-sm text-gray-600">
+              {language === "es" ? "Pago seguro con Stripe" : "Secure payment powered by Stripe"}
+            </span>
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div className="flex justify-between items-center py-3 border-b border-gray-100">
+              <span className="text-gray-600">ASSISTED Registration</span>
+              <span className="font-semibold text-gray-900">$299</span>
+            </div>
+            
+            {formData.additionalServices && formData.additionalServices.length > 0 && (
+              <>
+                <div className="text-left">
+                  <span className="text-sm text-gray-500 uppercase tracking-wider">Additional Services</span>
+                </div>
+                {formData.additionalServices.map((service: string) => {
+                  const serviceDetails: Record<string, { label: string; price: number }> = {
+                    ein: { label: "EIN (Tax ID) Application", price: 50 },
+                    "registered-agent": { label: "Registered Agent Service", price: 99 },
+                    "operating-agreement": { label: "Operating Agreement", price: 150 },
+                    "business-license": { label: "Business License Research", price: 75 },
+                    "document-review": { label: "Document Review", price: 50 },
+                    "expedited-processing": { label: "Expedited Processing", price: 100 },
+                  }
+                  const details = serviceDetails[service]
+                  return (
+                    <div key={service} className="flex justify-between items-center py-2 text-sm">
+                      <span className="text-gray-600">{details?.label}</span>
+                      <span className="font-medium text-gray-900">${details?.price}</span>
+                    </div>
+                  )
+                })}
+              </>
+            )}
+
+            <div className="flex justify-between items-center py-4 border-t-2 border-gray-200">
+              <span className="text-lg font-semibold text-gray-900">
+                {language === "es" ? "Total a Pagar" : "Total Amount"}
+              </span>
+              <span className="text-2xl font-bold text-green-600">${totalPrice}</span>
+            </div>
+          </div>
+
+          {/* Payment Button */}
+          <Button
+            onClick={handlePayment}
+            disabled={isSubmitting}
+            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-6 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+          >
+            {isSubmitting ? (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full"
+                />
+                {language === "es" ? "Procesando..." : "Processing..."}
+              </>
+            ) : (
+              <>
+                <CreditCard className="w-5 h-5 mr-2" />
+                {language === "es" ? `Pagar $${totalPrice}` : `Pay $${totalPrice}`}
+              </>
+            )}
+          </Button>
+
+          {/* Security badges */}
+          <div className="flex items-center justify-center space-x-6 mt-6 pt-6 border-t border-gray-100">
+            <div className="flex items-center text-gray-400 text-xs">
+              <Shield className="w-4 h-4 mr-1" />
+              SSL Secured
+            </div>
+            <div className="flex items-center text-gray-400 text-xs">
+              <Lock className="w-4 h-4 mr-1" />
+              256-bit Encryption
+            </div>
+          </div>
+        </div>
+
+        {/* Test Card Info (only show in development) */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-left">
+          <h4 className="font-semibold text-blue-800 mb-2 flex items-center">
+            <span className="mr-2">🧪</span> Test Mode - Use These Cards
+          </h4>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p><span className="font-mono bg-blue-100 px-2 py-0.5 rounded">4242 4242 4242 4242</span> - Success</p>
+            <p><span className="font-mono bg-blue-100 px-2 py-0.5 rounded">4000 0000 0000 0002</span> - Decline</p>
+            <p className="text-xs text-blue-600 mt-2">Use any future date & any 3-digit CVC</p>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
 
   return (
     <AuthGuard>
@@ -286,14 +464,18 @@ export default function AssistedRegistrationPage() {
                 transition={{ duration: 0.4, ease: "easeInOut" }}
                 className="flex-1 flex flex-col justify-center"
               >
-                <ModernFormStep
-                  step={steps[currentStep]}
-                  formData={formData}
-                  onSelection={handleSelection}
-                  onInputChange={handleInputChange}
-                  onCopyAddress={handleCopyPersonalAddress}
-                  serviceType="ASSISTED"
-                />
+                {steps[currentStep].type === "payment" ? (
+                  <PaymentStep />
+                ) : (
+                  <ModernFormStep
+                    step={steps[currentStep]}
+                    formData={formData}
+                    onSelection={handleSelection}
+                    onInputChange={handleInputChange}
+                    onCopyAddress={handleCopyPersonalAddress}
+                    serviceType="ASSISTED"
+                  />
+                )}
               </motion.div>
             </AnimatePresence>
 
@@ -321,7 +503,7 @@ export default function AssistedRegistrationPage() {
               <Button
                 variant="ghost"
                 onClick={handlePrev}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || steps[currentStep].type === "payment"}
                 className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -338,36 +520,38 @@ export default function AssistedRegistrationPage() {
                   Need Help?
                 </Button>
 
-                <Button
-                  onClick={currentStep === steps.length - 1 ? handleSubmit : handleNext}
-                  disabled={!canProceed() || isSubmitting}
-                  className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-8 md:px-10"
-                >
-                  {currentStep === steps.length - 1 ? (
-                    <>
-                      {isSubmitting ? (
-                        <>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                            className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"
-                          />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Submit Registration
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      Next
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
+                {steps[currentStep].type !== "payment" && (
+                  <Button
+                    onClick={handleNext}
+                    disabled={!canProceed() || isSubmitting}
+                    className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed px-8 md:px-10"
+                  >
+                    {steps[currentStep].type === "review" ? (
+                      <>
+                        {isSubmitting ? (
+                          <>
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"
+                            />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            Continue to Payment
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </div>

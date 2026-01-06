@@ -8,13 +8,15 @@ import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
+import { useLanguage } from "@/hooks/use-language"
 import { ProfileDropdown } from "@/components/profile-dropdown"
 
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, logout } = useAuth()
+  const { language } = useLanguage()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,11 +28,11 @@ export function Header() {
   }, [])
 
   const navItems = [
-    { name: "Home", href: "/" },
-    { name: "Services", href: "/#services" },
-    { name: "About", href: "/about" },
-    { name: "FAQ", href: "/faq" },
-    { name: "Contact", href: "/contact" },
+    { name: "Home", nameEs: "Inicio", href: "/" },
+    { name: "Services", nameEs: "Servicios", href: "/services" },
+    { name: "About", nameEs: "Nosotros", href: "/about" },
+    { name: "FAQ", nameEs: "Preguntas", href: "/faq" },
+    { name: "Contact", nameEs: "Contacto", href: "/contact" },
   ]
 
   return (
@@ -64,12 +66,12 @@ export function Header() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "font-medium transition-colors hover:text-blue-600",
+                  "font-medium transition-colors hover:text-green-600",
                   isScrolled ? "text-gray-700" : "text-gray-700",
-                  pathname === item.href ? "text-blue-600" : "",
+                  pathname === item.href ? "text-green-600" : "",
                 )}
               >
-                {item.name}
+                {language === "es" ? item.nameEs : item.name}
               </Link>
             ))}
           </nav>
@@ -84,10 +86,14 @@ export function Header() {
                 ) : (
                   <>
                     <Button variant="outline" size="sm" asChild>
-                      <Link href="/auth/login">Sign In</Link>
+                      <Link href="/auth/login">
+                        {language === "es" ? "Iniciar Sesión" : "Sign In"}
+                      </Link>
                     </Button>
-                    <Button size="sm" asChild>
-                      <Link href="/auth/register">Sign Up</Link>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700" asChild>
+                      <Link href="/auth/register">
+                        {language === "es" ? "Registrarse" : "Sign Up"}
+                      </Link>
                     </Button>
                   </>
                 )}
@@ -120,11 +126,11 @@ export function Header() {
                 href={item.href}
                 className={cn(
                   "font-medium px-2 py-2 rounded-md",
-                  pathname === item.href ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50",
+                  pathname === item.href ? "bg-green-50 text-green-600" : "text-gray-700 hover:bg-gray-50",
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                {item.name}
+                {language === "es" ? item.nameEs : item.name}
               </Link>
             ))}
             {!isLoading && (
@@ -136,32 +142,36 @@ export function Header() {
                       className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50 rounded-md"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Your Profile
+                      {language === "es" ? "Tu Perfil" : "Your Profile"}
                     </Link>
                     <Link
                       href="/dashboard/submissions"
                       className="flex items-center px-2 py-2 text-gray-700 hover:bg-gray-50 rounded-md"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Your Submissions
+                      {language === "es" ? "Tus Solicitudes" : "Your Submissions"}
                     </Link>
                     <button
                       onClick={() => {
                         setIsMobileMenuOpen(false)
-                        // Add logout functionality here
+                        logout()
                       }}
                       className="flex w-full items-center px-2 py-2 text-red-600 hover:bg-gray-50 rounded-md text-left"
                     >
-                      Sign out
+                      {language === "es" ? "Cerrar Sesión" : "Sign out"}
                     </button>
                   </>
                 ) : (
                   <div className="pt-2 flex flex-col space-y-2">
                     <Button variant="outline" asChild>
-                      <Link href="/auth/login">Sign In</Link>
+                      <Link href="/auth/login">
+                        {language === "es" ? "Iniciar Sesión" : "Sign In"}
+                      </Link>
                     </Button>
-                    <Button asChild>
-                      <Link href="/auth/register">Sign Up</Link>
+                    <Button className="bg-green-600 hover:bg-green-700" asChild>
+                      <Link href="/auth/register">
+                        {language === "es" ? "Registrarse" : "Sign Up"}
+                      </Link>
                     </Button>
                   </div>
                 )}

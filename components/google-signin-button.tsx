@@ -25,7 +25,7 @@ export function GoogleSignInButton({
     setIsGoogleLoading(true)
 
     try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.georgia.registrarnegocio.com"
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2000"
 
       // Create a popup window for Google OAuth
       const popup = window.open(

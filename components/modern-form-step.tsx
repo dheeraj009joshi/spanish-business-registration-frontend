@@ -334,6 +334,19 @@ export function ModernFormStep({
       return address
     }
 
+    // Get business type display name
+    const getBusinessTypeLabel = (type: string) => {
+      const types: Record<string, string> = {
+        "domestic-profit": "Domestic Profit Corporation",
+        "domestic-llc": "Limited Liability Company (LLC)",
+        "domestic-nonprofit": "Nonprofit Corporation",
+        "domestic-professional": "Professional Corporation",
+        "domestic-lp": "Domestic Limited Partnership",
+        "domestic-benefit": "Domestic Benefit Corporation",
+      }
+      return types[type] || type || "LLC"
+    }
+
     return (
       <div className="text-center h-full flex flex-col justify-center">
         <motion.h1
@@ -360,38 +373,57 @@ export function ModernFormStep({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg p-4 md:p-6"
+              className="bg-white dark:bg-gray-800/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-5 md:p-6 shadow-sm"
             >
-              <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">
-                Business Information
-              </h3>
-              <div className="space-y-2 text-left">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Business Type:</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{formData.businesstype || "LLC"}</span>
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-xl">🏢</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Business Name:</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{formData.businessName || ""}</span>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Business Information
+                </h3>
+              </div>
+              <div className="space-y-3 text-left">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">Business Type</span>
+                  <span className="text-gray-900 dark:text-white font-medium text-sm text-right max-w-[60%]">
+                    {getBusinessTypeLabel(formData.businesstype || formData.businessType)}
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Business Email:</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{formData.businessEmail || ""}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">Business Name</span>
+                  <span className="text-gray-900 dark:text-white font-medium text-sm">{formData.businessName || "—"}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Phone Number:</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{formData.phoneNumber || ""}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">Email</span>
+                  <span className="text-gray-900 dark:text-white font-medium text-sm">{formData.businessEmail || "—"}</span>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                  <div className="text-sm">
-                    <span className="text-gray-600 dark:text-gray-400 block mb-1">Business Address:</span>
-                    <span className="text-gray-900 dark:text-white font-medium block">{formatAddress("business")}</span>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">Phone</span>
+                  <span className="text-gray-900 dark:text-white font-medium text-sm">{formData.phoneNumber || "—"}</span>
+                </div>
+                {formData.industry && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">Industry</span>
+                    <span className="text-gray-900 dark:text-white font-medium text-sm">{formData.industry}</span>
+                  </div>
+                )}
+                <div className="pt-3">
+                  <div className="flex items-start">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm mr-2">📍</span>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider block mb-1">Business Address</span>
+                      <span className="text-gray-900 dark:text-white text-sm block">{formatAddress("business") || "—"}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                  <div className="text-sm">
-                    <span className="text-gray-600 dark:text-gray-400 block mb-1">Personal Address:</span>
-                    <span className="text-gray-900 dark:text-white font-medium block">{formatAddress("personal")}</span>
+                <div className="pt-2">
+                  <div className="flex items-start">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm mr-2">🏠</span>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider block mb-1">Personal Address</span>
+                      <span className="text-gray-900 dark:text-white text-sm block">{formatAddress("personal") || "—"}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -402,42 +434,54 @@ export function ModernFormStep({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 md:p-6"
+              className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 rounded-xl p-5 md:p-6 shadow-sm"
             >
-              <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">Pricing Summary</h3>
-              <div className="space-y-2 text-left">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">{serviceType} Registration:</span>
-                  <span className="text-gray-900 dark:text-white font-medium">
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-xl">💰</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pricing Summary</h3>
+              </div>
+              <div className="space-y-3 text-left">
+                <div className="flex justify-between items-center py-3 bg-white/50 dark:bg-gray-800/30 rounded-lg px-3">
+                  <div>
+                    <span className="text-gray-900 dark:text-white font-medium block">{serviceType} Registration</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-xs">Base package</span>
+                  </div>
+                  <span className="text-gray-900 dark:text-white font-semibold text-lg">
                     ${serviceType === "DIY" ? "99" : "299"}
                   </span>
                 </div>
+                
                 {formData.additionalServices && formData.additionalServices.length > 0 && (
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                    <span className="text-gray-600 dark:text-gray-400 text-sm block mb-1">Additional Services:</span>
-                    {formData.additionalServices.map((service: string) => {
-                      const serviceDetails = {
-                        ein: { label: "EIN (Tax ID) Application", price: 50 },
-                        "registered-agent": { label: "Registered Agent Service", price: 99 },
-                        "operating-agreement": { label: "Operating Agreement", price: 150 },
-                        "business-license": { label: "Business License Research", price: 75 },
-                        "document-review": { label: "Document Review & Consultation", price: 50 },
-                        "expedited-processing": { label: "Expedited Processing", price: 100 },
-                      }[service]
+                  <div className="pt-2">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider block mb-2">Additional Services</span>
+                    <div className="space-y-2">
+                      {formData.additionalServices.map((service: string) => {
+                        const serviceDetails = {
+                          ein: { label: "EIN (Tax ID) Application", price: 50 },
+                          "registered-agent": { label: "Registered Agent Service", price: 99 },
+                          "operating-agreement": { label: "Operating Agreement", price: 150 },
+                          "business-license": { label: "Business License Research", price: 75 },
+                          "document-review": { label: "Document Review & Consultation", price: 50 },
+                          "expedited-processing": { label: "Expedited Processing", price: 100 },
+                        }[service]
 
-                      return (
-                        <div key={service} className="flex justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-400">{serviceDetails?.label}:</span>
-                          <span className="text-gray-900 dark:text-white font-medium">${serviceDetails?.price}</span>
-                        </div>
-                      )
-                    })}
+                        return (
+                          <div key={service} className="flex justify-between items-center py-2 px-3 bg-white/30 dark:bg-gray-800/20 rounded-lg">
+                            <span className="text-gray-700 dark:text-gray-300 text-sm">{serviceDetails?.label}</span>
+                            <span className="text-gray-900 dark:text-white font-medium">${serviceDetails?.price}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
-                  <div className="flex justify-between text-base font-semibold">
-                    <span className="text-gray-900 dark:text-white">Total:</span>
-                    <span className="text-green-600 dark:text-green-400">${totalPrice}</span>
+                
+                <div className="border-t-2 border-green-300 dark:border-green-700 pt-4 mt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-900 dark:text-white font-semibold text-lg">Total</span>
+                    <span className="text-green-600 dark:text-green-400 font-bold text-2xl">${totalPrice}</span>
                   </div>
                 </div>
               </div>
@@ -449,7 +493,7 @@ export function ModernFormStep({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="space-y-4"
+            className="bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4"
           >
             <div className="flex items-start space-x-3 text-left">
               <Checkbox
@@ -462,7 +506,7 @@ export function ModernFormStep({
                 htmlFor="agreeToTerms"
                 className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
               >
-                I certify that the information provided is true and accurate.
+                I certify that the information provided is true and accurate, and I understand that providing false information may result in delays or rejection of my registration.
               </label>
             </div>
 
@@ -478,7 +522,7 @@ export function ModernFormStep({
                 className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
               >
                 I agree to pay the total amount of{" "}
-                <strong className="text-green-600 dark:text-green-400">${totalPrice}</strong> for the selected services.
+                <strong className="text-green-600 dark:text-green-400">${totalPrice}</strong> for the selected services and understand that payment will be processed securely via Stripe.
               </label>
             </div>
           </motion.div>

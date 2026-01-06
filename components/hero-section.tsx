@@ -4,12 +4,14 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, CheckCircle } from "lucide-react"
+import { ArrowRight, CheckCircle, LayoutDashboard } from "lucide-react"
 import { motion } from "framer-motion"
 import { useLanguage } from "@/hooks/use-language"
+import { useAuth } from "@/hooks/use-auth"
 
 export function HeroSection() {
   const { language, translations } = useLanguage()
+  const { isAuthenticated } = useAuth()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -52,14 +54,23 @@ export function HeroSection() {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700 group" asChild>
-                <Link href="/register/diy">
+                <Link href="/register/assisted">
                   {translations.hero.cta}
                   <ArrowRight className="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/auth/register">{translations.hero.signup}</Link>
-              </Button>
+              {!isAuthenticated ? (
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/auth/register">{translations.hero.signup}</Link>
+                </Button>
+              ) : (
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="mr-2 w-4 h-4" />
+                    {language === "es" ? "Mi Panel" : "Dashboard"}
+                  </Link>
+                </Button>
+              )}
             </div>
           </motion.div>
 
